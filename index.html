@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ironman Training Calendar & Habit Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .sync-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sync-input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            width: 150px;
+        }
+
+        .sync-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .sync-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .sync-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sync-status {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            padding: 5px 10px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .calendar-container {
+            padding: 0 20px 20px 20px;
+            overflow-x: auto;
+        }
+
+        .calendar {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1400px;
+        }
+
+        .calendar th, .calendar td {
+            border: 2px solid #e0e0e0;
+            vertical-align: top;
+            position: relative;
+        }
+
+        .calendar th {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 10px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .calendar td {
+            padding: 15px;
+            height: 200px;
+            width: 200px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .calendar td:hover {
+            background: #f8f9fa;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .week-header {
+            background: linear-gradient(135deg, #3498db, #2980b9) !important;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            font-size: 1.2rem;
+        }
+
+        .rest-day {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
+            color: white;
+        }
+
+        .race-day {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .workout-checkbox {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+
+        .workout-item {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .swim {
+            border-left-color: #1abc9c;
+            background: rgba(26, 188, 156, 0.1);
+        }
+
+        .run {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .bike {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .strength {
+            border-left-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        .habits-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .habit-item {
+            display: flex;
+            align-items: center;
+            margin: 3px 0;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .habit-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+            padding: 2px;
+        }
+
+        .habit-checkbox {
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            cursor: pointer;
+            accent-color: #4CAF50;
+            appearance: none;
+            border: 2px solid #ccc;
+            border-radius: 3px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .habit-checkbox:checked {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .habit-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -2px;
+            left: 1px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .day-progress-bar {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 4px;
+            margin: 8px 0 5px 0;
+            overflow: hidden;
+        }
+
+        .day-progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .habit-label {
+            flex: 1;
+            line-height: 1.2;
+        }
+
+        .day-header {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            background: #ecf0f1;
+            border-radius: 10px;
+            height: 6px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .stats {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.98));
+            padding: 20px 30px;
+            border-bottom: 3px solid #e0e0e0;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .stats h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 2px solid rgba(52, 152, 219, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-color: rgba(52, 152, 219, 0.3);
+        }
+
+        .stat-item span:first-child {
+            display: block;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 1.2rem;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .sync-controls {
+                position: static;
+                margin-top: 10px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .sync-input {
+                width: 120px;
+            }
+            
+            .stats-grid {
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+            
+            .stat-item {
+                flex: 1 1 calc(50% - 8px);
+                min-width: 100px;
+                height: 70px;
+                padding: 8px;
+            }
+            
+            .stats {
+                padding: 15px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .calendar td {
+                height: 180px;
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sync-controls {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .stats-grid {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .stat-item {
+                flex: none;
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏊‍♂️🚴‍♂️🏃‍♂️ Ironman Training Calendar</h1>
+            <p>13-Week Training Plan with Daily Habit Tracking</p>
+            <div class="sync-controls">
+                <input type="text" id="sync-code" class="sync-input" placeholder="Enter sync code...">
+                <button onclick="loadData()" class="sync-btn" id="load-btn">Load</button>
+                <button onclick="saveData()" class="sync-btn" id="save-btn">Save</button>
+                <div class="sync-status" id="sync-status">Ready</div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <h3>📊 Progress Stats</h3>
+            <div class="stat-item">
+                <span>Workouts Done:</span>
+                <span class="stat-value" id="workouts-done">0/91</span>
+            </div>
+            <div class="stat-item">
+                <span>Today:</span>
+                <span class="stat-value" id="current-day">Wed 7/30</span>
+            </div>
+            <div class="stat-item">
+                <span>Habits Today:</span>
+                <span class="stat-value" id="habits-today">0/6</span>
+            </div>
+            <div class="stat-item">
+                <span>Current Week:</span>
+                <span class="stat-value" id="current-week">Week 0</span>
+            </div>
+            <div class="stat-item">
+                <span>Week Progress:</span>
+                <span class="stat-value" id="week-progress">0%</span>
+            </div>
+            <div class="stat-item">
+                <span>Overall:</span>
+                <span class="stat-value" id="overall-progress">0%</span>
+            </div>
+        </div>
+        
+        <div class="calendar-container">
+            <table class="calendar" id="calendar">
+                <thead>
+                    <tr>
+                        <th>Week</th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                        <th>Saturday</th>
+                        <th>Sunday</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Training data parsed from CSV
+        const trainingData = {
+            0: {
+                'Monday': 'Rest',
+                'Tuesday': '40-minute treadmill incline intervals (6 x 30-second hill sprints)',
+                'Wednesday': ['Swim 800 yards (8 x 25 sprints, RI = 20s)', 'Run 4 miles moderate + 4 x 10s hill sprints'],
+                'Thursday': '40-minute stair climber moderate + 5 mins hard',
+                'Friday': ['Swim 800 yards (3 x 100 race pace, RI = 15s)', 'Run 4 miles moderate'],
+                'Saturday': '60-minute incline walk (hike simulation)',
+                'Sunday': 'Run 7 miles moderate'
+            },
+            1: {
+                'Monday': 'Rest',
+                'Tuesday': '45-minute stair climber intervals (8 x 1-minute hard)',
+                'Wednesday': ['Swim 1,000 yards (6 x 50 sprints, RI = 20s)', 'Run 4.5 miles with 6 x 30s hard'],
+                'Thursday': '40-minute incline walk + 8 mins hard',
+                'Friday': ['Swim 1,000 yards (2 x 200 race pace, RI = 30s)', 'Run 4.5 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': '90-minute stair climber session',
+                'Sunday': 'Run 9 miles moderate'
+            },
+            2: {
+                'Monday': 'Rest',
+                'Tuesday': '45-minute incline walk with 6 x 2-minute brisk hills',
+                'Wednesday': ['Swim 1,100 yards (8 x 50 sprints, RI = 20s)', 'Run 4.5 miles with 6 x 45s hard'],
+                'Thursday': '40-minute stair climber + 10 mins hard',
+                'Friday': ['Swim 1,100 yards (3 x 200 race pace, RI = 30s)', 'Run 4.5 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': '100-minute incline treadmill hike',
+                'Sunday': 'Run 10 miles moderate'
+            },
+            3: {
+                'Monday': 'Rest',
+                'Tuesday': '45-minute stair climber with 4 x 3-minute hard',
+                'Wednesday': ['Swim 1,200 yards (10 x 50 sprints, RI = 20s)', 'Run 4.5 miles with 6 x 1-minute hard'],
+                'Thursday': '40-minute incline walk + 12 mins hard',
+                'Friday': ['Swim 1,200 yards (3 x 200 race pace, RI = 20s)', 'Run 5 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': '2-hour treadmill hike with intervals',
+                'Sunday': 'Run 11 miles moderate'
+            },
+            4: {
+                'Monday': 'Rest',
+                'Tuesday': '40-minute stair climber with 6 x 1-minute hard',
+                'Wednesday': ['Swim 1,000 yards (8 x 50 sprints, RI = 20s)', 'Run 4.5 miles with 6 x 30s hard'],
+                'Thursday': '40-minute incline walk + 8 mins hard',
+                'Friday': ['Swim 1,000 yards (2 x 200 race pace, RI = 20s)', 'Run 4 miles moderate'],
+                'Saturday': '90-minute stair climber session',
+                'Sunday': 'Run 9 miles moderate'
+            },
+            5: {
+                'Monday': 'Rest',
+                'Tuesday': '50-minute incline treadmill with 6 x 2-minute hard',
+                'Wednesday': ['Swim 1,300 yards (6 x 75 sprints, RI = 20s)', 'Run workout: 1 mi easy, 8 x 600m @5K pace, 1 mi easy'],
+                'Thursday': '40-minute incline walk + 15 mins hard',
+                'Friday': ['Swim 1,300 yards (2 x 300 race pace, RI = 30s)', 'Run 5 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': '2-hour stair climber',
+                'Sunday': 'Run 12 miles moderate'
+            },
+            6: {
+                'Monday': 'Rest',
+                'Tuesday': '50-minute stair climber with 5 x 3-minute hard',
+                'Wednesday': ['Swim 1,400 yards (8 x 75 sprints, RI = 20s)', 'Run: 1 mi easy, 6 x 800m @5K, 1 mi easy'],
+                'Thursday': '40-minute incline walk + 18 mins hard',
+                'Friday': ['Swim 1,400 yards (2 x 300 race pace, RI = 20s)', 'Run 5.5 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': '2.5-hour treadmill hike',
+                'Sunday': 'Run 13 miles moderate'
+            },
+            7: {
+                'Monday': 'Rest',
+                'Tuesday': '55-minute stair climber with 4 x 4-minute hard',
+                'Wednesday': ['Swim 1,500 yards (10 x 75 sprints, RI = 20s)', 'Run: 1 mi easy, 5 x 1,000m @5K, 1 mi easy'],
+                'Thursday': '40-minute incline walk + 20 mins hard',
+                'Friday': ['Swim 1,500 yards (3 x 300 race pace, RI = 30s)', 'Run 6 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': '2.5-hour incline walk',
+                'Sunday': 'Run 14 miles moderate'
+            },
+            8: {
+                'Monday': 'Rest',
+                'Tuesday': 'Bike 45 minutes with 5 x 2-minute hard efforts scattered.',
+                'Wednesday': ['Swim 1,300 yards (6 x 75 sprints, RI = 20s)', 'Run: 2 mi easy, 1 mi @10K pace, 2 mi easy'],
+                'Thursday': 'Bike 40 minutes moderate + 10 minutes comfortably hard.',
+                'Friday': ['Swim 1,300 yards (2 x 300 race pace, RI = 30s)', 'Run 5 miles moderate'],
+                'Saturday': 'Bike 45 miles moderate.',
+                'Sunday': 'Run 10 miles moderate'
+            },
+            9: {
+                'Monday': 'Rest',
+                'Tuesday': 'Bike 20 minutes easy, 20 minutes comfortably hard, 20 minutes easy.',
+                'Wednesday': ['Swim 1,600 yards (6 x 100 sprints, RI = 20s)', 'Run: 2 mi easy, 2 mi @10K pace, 2 mi easy'],
+                'Thursday': 'Bike 45 minutes with 5 x 2-minute hard efforts scattered.',
+                'Friday': ['Swim 1,600 yards (2 x 400 race pace, RI = 30s)', 'Run 6 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': 'Bike 50 miles moderate + 10 miles race pace + 15-minute transition run at race pace.',
+                'Sunday': 'Run 10 miles moderate + 2 miles race pace'
+            },
+            10: {
+                'Monday': 'Rest',
+                'Tuesday': 'Bike 20 minutes easy, 25 minutes comfortably hard, 15 minutes easy.',
+                'Wednesday': ['Swim 1,800 yards (8 x 100 sprints, RI = 20s)', 'Run: 2 mi easy, 3 mi @10K pace, 2 mi easy'],
+                'Thursday': 'Bike 45 minutes with 4 x 3-minute hard efforts scattered.',
+                'Friday': ['Swim 1,600 yards (2 x 400 race pace, RI = 20s)', 'Run 6 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': 'Bike 45 miles moderate + 15 miles race pace + 20-minute transition run at race pace.',
+                'Sunday': 'Run 12 miles moderate + 2 miles race pace'
+            },
+            11: {
+                'Monday': 'Rest',
+                'Tuesday': 'Bike 15 minutes easy, 30 minutes comfortably hard, 15 minutes easy.',
+                'Wednesday': ['Swim 2,000 yards (10 x 100 sprints, RI = 20s)', 'Run: 2 mi easy, 3 mi @10K pace, 2 mi easy'],
+                'Thursday': 'Bike 45 minutes with 8 x 1-minute hard efforts scattered.',
+                'Friday': ['Swim 1,600 yards (2 x 400 race pace, RI = 30s)', 'Run 4.5 miles moderate + 4 x 10s hill sprints'],
+                'Saturday': 'Bike 40 miles moderate + 10 miles race pace + 10-minute transition run at race pace.',
+                'Sunday': 'Run 12 miles moderate + 2 miles race pace (beat last week)'
+            },
+            12: {
+                'Monday': 'Rest',
+                'Tuesday': 'Bike 10 minutes easy, 10 minutes comfortably hard, 10 minutes easy.',
+                'Wednesday': ['Swim 1,300 yards (5 x 100 sprints, RI = 20s)', 'Run: 2 mi easy, 1 mi @10K pace, 2 mi easy'],
+                'Thursday': 'Bike 45 minutes with 5 x 30-second sprints scattered.',
+                'Friday': ['Swim 800 yards (400 race pace)', 'Run 3 miles easy'],
+                'Saturday': 'Swim 10 minutes easy + 4 x 30s race pace',
+                'Sunday': 'RACE DAY'
+            }
+        };
+
+        // Strength training data from CSV
+        const strengthData = {
+            '2025-07-28': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-07-29': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-07-31': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-08-02': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-08-03': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each',
+            '2025-08-04': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-08-05': 'Push/Pull A: 3x10 Incline Dumbbell Press, 3x10 Barbell Row, 3x12 Arnold Press, 3x15 Lat Pulldown, 3x15 Cable Flys',
+            '2025-08-07': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-08-09': 'Lower B: 3x8 Front Squats, 3x12 Bulgarian Split Squats, 3x10 Hamstring Curls, 3x15 Glute Bridges',
+            '2025-08-10': 'KB B: 4 Rounds - 10 KB Deadlifts, 10 KB Thrusters, 8 KB Snatches/arm, 10 Lunges, 5 Burpees',
+            '2025-08-11': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-08-12': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-08-14': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-08-16': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-08-17': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each',
+            '2025-08-18': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-08-19': 'Push/Pull A: 3x10 Incline Dumbbell Press, 3x10 Barbell Row, 3x12 Arnold Press, 3x15 Lat Pulldown, 3x15 Cable Flys',
+            '2025-08-21': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-08-23': 'Lower B: 3x8 Front Squats, 3x12 Bulgarian Split Squats, 3x10 Hamstring Curls, 3x15 Glute Bridges',
+            '2025-08-24': 'KB B: 4 Rounds - 10 KB Deadlifts, 10 KB Thrusters, 8 KB Snatches/arm, 10 Lunges, 5 Burpees',
+            '2025-08-25': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-08-26': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-08-28': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-08-30': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-08-31': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each',
+            '2025-09-01': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-09-02': 'Push/Pull A: 3x10 Incline Dumbbell Press, 3x10 Barbell Row, 3x12 Arnold Press, 3x15 Lat Pulldown, 3x15 Cable Flys',
+            '2025-09-04': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-09-06': 'Lower B: 3x8 Front Squats, 3x12 Bulgarian Split Squats, 3x10 Hamstring Curls, 3x15 Glute Bridges',
+            '2025-09-07': 'KB B: 4 Rounds - 10 KB Deadlifts, 10 KB Thrusters, 8 KB Snatches/arm, 10 Lunges, 5 Burpees',
+            '2025-09-08': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-09-09': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-09-11': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-09-13': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-09-14': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each',
+            '2025-09-15': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-09-16': 'Push/Pull A: 3x10 Incline Dumbbell Press, 3x10 Barbell Row, 3x12 Arnold Press, 3x15 Lat Pulldown, 3x15 Cable Flys',
+            '2025-09-18': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-09-20': 'Lower B: 3x8 Front Squats, 3x12 Bulgarian Split Squats, 3x10 Hamstring Curls, 3x15 Glute Bridges',
+            '2025-09-21': 'KB B: 4 Rounds - 10 KB Deadlifts, 10 KB Thrusters, 8 KB Snatches/arm, 10 Lunges, 5 Burpees',
+            '2025-09-22': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-09-23': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-09-25': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-09-27': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-09-28': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each',
+            '2025-09-29': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-09-30': 'Push/Pull A: 3x10 Incline Dumbbell Press, 3x10 Barbell Row, 3x12 Arnold Press, 3x15 Lat Pulldown, 3x15 Cable Flys',
+            '2025-10-02': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-10-04': 'Lower B: 3x8 Front Squats, 3x12 Bulgarian Split Squats, 3x10 Hamstring Curls, 3x15 Glute Bridges',
+            '2025-10-05': 'KB B: 4 Rounds - 10 KB Deadlifts, 10 KB Thrusters, 8 KB Snatches/arm, 10 Lunges, 5 Burpees',
+            '2025-10-06': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-10-07': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-10-09': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-10-11': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-10-12': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each',
+            '2025-10-13': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-10-14': 'Push/Pull A: 3x10 Incline Dumbbell Press, 3x10 Barbell Row, 3x12 Arnold Press, 3x15 Lat Pulldown, 3x15 Cable Flys',
+            '2025-10-16': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-10-18': 'Lower B: 3x8 Front Squats, 3x12 Bulgarian Split Squats, 3x10 Hamstring Curls, 3x15 Glute Bridges',
+            '2025-10-19': 'KB B: 4 Rounds - 10 KB Deadlifts, 10 KB Thrusters, 8 KB Snatches/arm, 10 Lunges, 5 Burpees',
+            '2025-10-20': 'Core A: 3x1min Plank, 3x15 Russian Twists, 3x12 Hanging Leg Raises, 2x10 Side Plank Rotations',
+            '2025-10-21': 'Lower A: 3x10 Goblet Squats, 3x10 RDLs, 3x12 Step-ups, 3x15 Calf Raises, 2x10 Lateral Band Walks',
+            '2025-10-23': 'KB A: 3 Rounds - 12 KB Swings, 8 Goblet Squats, 10 KB Press, 6 KB Rows, 30s Jump Rope',
+            '2025-10-25': 'Push/Pull B: 3x8 Bench Press, 3x10 Pull-ups, 3x10 Seated Row, 3x12 DB Shoulder Press, 3x12 Face Pulls',
+            '2025-10-26': 'Mobility Flow B: 3 Rounds: Cat-Cow, World\'s Greatest Stretch, Glute Bridges, Dead Bug x10 reps each'
+        };
+
+        let habitData = {};
+        let workoutData = {};
+
+        // Cloud sync functions
+        async function saveData() {
+            const syncCode = document.getElementById('sync-code').value.trim();
+            if (!syncCode) {
+                setStatus('Enter a sync code first', 'error');
+                return;
+            }
+
+            const saveBtn = document.getElementById('save-btn');
+            const loadBtn = document.getElementById('load-btn');
+            
+            try {
+                saveBtn.disabled = true;
+                loadBtn.disabled = true;
+                setStatus('Saving...', 'loading');
+
+                const data = {
+                    habitData: habitData,
+                    workoutData: workoutData,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Using JSONBin.io as a free cloud storage service
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${syncCode}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': '$2a$10$YLdPUAk8sFn9yM8fF5iYm.Z9K1J8G9VJ9L8S9D7F6H5K4J3M2N1P0',
+                        'X-Bin-Name': 'ironman-training-data'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    setStatus('✓ Saved successfully!', 'success');
+                    saveToLocalStorage();
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                // Try alternative method using a simple paste service
+                try {
+                    const data = {
+                        habitData: habitData,
+                        workoutData: workoutData,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    const response = await fetch('https://api.paste.ee/v1/pastes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            key: syncCode,
+                            description: 'Ironman Training Data',
+                            paste: JSON.stringify(data),
+                            format: 'json'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        setStatus('✓ Saved to cloud!', 'success');
+                        saveToLocalStorage();
+                    } else {
+                        throw new Error('All sync methods failed');
+                    }
+                } catch (fallbackError) {
+                    setStatus('❌ Save failed - saved locally only', 'error');
+                    saveToLocalStorage();
+                }
+            } finally {
+                saveBtn.disabled = false;
+                loadBtn.disabled = false;
+            }
+        }
+
+        async function loadData() {
+            const syncCode = document.getElementById('sync-code').value.trim();
+            if (!syncCode) {
+                setStatus('Enter a sync code first', 'error');
+                return;
+            }
+
+            const saveBtn = document.getElementById('save-btn');
+            const loadBtn = document.getElementById('load-btn');
+            
+            try {
+                saveBtn.disabled = true;
+                loadBtn.disabled = true;
+                setStatus('Loading...', 'loading');
+
+                // Try JSONBin.io first
+                let response = await fetch(`https://api.jsonbin.io/v3/b/${syncCode}/latest`, {
+                    headers: {
+                        'X-Master-Key': '$2a$10$YLdPUAk8sFn9yM8fF5iYm.Z9K1J8G9VJ9L8S9D7F6H5K4J3M2N1P0'
+                    }
+                });
+
+                let data;
+                if (response.ok) {
+                    const result = await response.json();
+                    data = result.record;
+                } else {
+                    // Try alternative method
+                    response = await fetch(`https://api.paste.ee/v1/pastes/${syncCode}`);
+                    if (response.ok) {
+                        const result = await response.json();
+                        data = JSON.parse(result.paste);
+                    } else {
+                        throw new Error('Data not found');
+                    }
+                }
+
+                if (data && data.habitData && data.workoutData) {
+                    habitData = data.habitData;
+                    workoutData = data.workoutData;
+                    
+                    // Reinitialize missing data
+                    initializeData();
+                    
+                    // Recreate calendar with loaded data
+                    document.getElementById('calendar-body').innerHTML = '';
+                    createCalendar();
+                    updateStats();
+                    
+                    setStatus('✓ Loaded successfully!', 'success');
+                    saveToLocalStorage();
+                } else {
+                    throw new Error('Invalid data format');
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+                setStatus('❌ Load failed', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                loadBtn.disabled = false;
+            }
+        }
+
+        function setStatus(message, type) {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.textContent = message;
+            statusEl.style.backgroundColor = 
+                type === 'success' ? 'rgba(76, 175, 80, 0.3)' :
+                type === 'error' ? 'rgba(244, 67, 54, 0.3)' :
+                type === 'loading' ? 'rgba(255, 193, 7, 0.3)' :
+                'rgba(255, 255, 255, 0.2)';
+                
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    setStatus('Ready', 'ready');
+                }, 3000);
+            }
+        }
+
+        function generateSyncCode() {
+            return Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+
+        // Initialize sync code if empty
+        window.addEventListener('load', () => {
+            const syncInput = document.getElementById('sync-code');
+            if (!syncInput.value) {
+                syncInput.value = generateSyncCode();
+            }
+        });
+
+        function getDateForWeekDay(week, day) {
+            const weekStartDate = new Date(2025, 6, 28); // July 28, 2025 (Monday)
+            const dayOffset = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].indexOf(day);
+            const totalDays = (week * 7) + dayOffset;
+            const targetDate = new Date(weekStartDate);
+            targetDate.setDate(weekStartDate.getDate() + totalDays);
+            return targetDate.toISOString().split('T')[0];
+        }
+
+        function getStrengthWorkoutForDay(week, day) {
+            const dateKey = getDateForWeekDay(week, day);
+            return strengthData[dateKey] || null;
+        }
+
+        function initializeData() {
+            // Initialize habit and workout tracking data
+            for (let week = 0; week <= 12; week++) {
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                days.forEach(day => {
+                    const key = `${week}-${day}`;
+                    
+                    // Initialize habits only if not already loaded
+                    if (!habitData[key]) {
+                        habitData[key] = new Array(6).fill(false);
+                    }
+                    
+                    // Get triathlon workouts for this day
+                    let workouts = trainingData[week] && trainingData[week][day];
+                    
+                    // Get strength workout for this date
+                    const strengthWorkout = getStrengthWorkoutForDay(week, day);
+                    
+                    // Combine workouts
+                    let allWorkouts = [];
+                    
+                    if (workouts) {
+                        if (workouts === 'Rest' || workouts === 'RACE DAY') {
+                            allWorkouts.push(workouts);
+                        } else if (Array.isArray(workouts)) {
+                            allWorkouts = [...workouts];
+                        } else {
+                            allWorkouts.push(workouts);
+                        }
+                    }
+                    
+                    if (strengthWorkout) {
+                        allWorkouts.push(strengthWorkout);
+                    }
+                    
+                    // Initialize workout checkboxes
+                    if (allWorkouts.length > 0) {
+                        allWorkouts.forEach((workout, index) => {
+                            const workoutKey = `${week}-${day}-${index}`;
+                            if (workoutData[workoutKey] === undefined) {
+                                workoutData[workoutKey] = false;
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        const dailyHabits = [
+            "1 structured workout/day (triathlon-specific)",
+            "1 short recovery session (walk, yoga, stretching)",
+            "Follow race-supportive nutrition plan",
+            "No alcohol",
+            "Read 10 pages/day",
+            "Daily journal entry"
+        ];
+
+        function getWorkoutType(workout) {
+            if (typeof workout === 'string') {
+                workout = workout.toLowerCase();
+                if (workout.includes('swim')) return 'swim';
+                if (workout.includes('run')) return 'run';
+                if (workout.includes('bike')) return 'bike';
+                if (workout.includes('core') || workout.includes('kb') || workout.includes('push/pull') || 
+                    workout.includes('lower') || workout.includes('mobility') || workout.includes('strength')) return 'strength';
+                if (workout.includes('rest')) return 'rest';
+                if (workout.includes('race day')) return 'race';
+            }
+            return 'other';
+        }
+
+        function renderWorkout(workout, day, week, index) {
+            if (workout === 'Rest') {
+                const key = `${week}-${day}-${index}`;
+                const checked = workoutData[key] ? 'checked' : '';
+                return `
+                    <div class="workout-item rest">
+                        <input type="checkbox" class="workout-checkbox" 
+                               ${checked} 
+                               onchange="toggleWorkout('${key}')"
+                               data-workout-key="${key}">
+                        🛌 Rest Day
+                    </div>`;
+            }
+            if (workout === 'RACE DAY') {
+                const key = `${week}-${day}-${index}`;
+                const checked = workoutData[key] ? 'checked' : '';
+                return `
+                    <div class="workout-item race">
+                        <input type="checkbox" class="workout-checkbox" 
+                               ${checked} 
+                               onchange="toggleWorkout('${key}')"
+                               data-workout-key="${key}">
+                        🏁 RACE DAY!
+                    </div>`;
+            }
+            
+            const type = getWorkoutType(workout);
+            const icon = type === 'swim' ? '🏊‍♂️' : 
+                        type === 'run' ? '🏃‍♂️' : 
+                        type === 'bike' ? '🚴‍♂️' : 
+                        type === 'strength' ? '💪' : '💪';
+            const key = `${week}-${day}-${index}`;
+            const checked = workoutData[key] ? 'checked' : '';
+            return `
+                <div class="workout-item ${type}">
+                    <input type="checkbox" class="workout-checkbox" 
+                           ${checked} 
+                           onchange="toggleWorkout('${key}')"
+                           data-workout-key="${key}">
+                    ${icon} ${workout}
+                </div>`;
+        }
+
+        function getCombinedWorkouts(week, day) {
+            // Get triathlon workouts
+            let triathlonWorkouts = trainingData[week] && trainingData[week][day];
+            
+            // Get strength workout
+            const strengthWorkout = getStrengthWorkoutForDay(week, day);
+            
+            let allWorkouts = [];
+            
+            // Add triathlon workouts
+            if (triathlonWorkouts) {
+                if (triathlonWorkouts === 'Rest' || triathlonWorkouts === 'RACE DAY') {
+                    allWorkouts.push(triathlonWorkouts);
+                } else if (Array.isArray(triathlonWorkouts)) {
+                    allWorkouts = [...triathlonWorkouts];
+                } else {
+                    allWorkouts.push(triathlonWorkouts);
+                }
+            }
+            
+            // Add strength workout
+            if (strengthWorkout) {
+                allWorkouts.push(strengthWorkout);
+            }
+            
+            return allWorkouts;
+        }
+
+        function renderHabits(week, day) {
+            const key = `${week}-${day}`;
+            const habitsHtml = dailyHabits.map((habit, index) => {
+                const checked = habitData[key][index] ? 'checked' : '';
+                return `
+                    <div class="habit-item">
+                        <input type="checkbox" class="habit-checkbox" 
+                               ${checked} 
+                               onchange="toggleHabit('${key}', ${index})">
+                        <span class="habit-label">${habit}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Calculate progress for this day
+            const completedHabits = habitData[key].filter(Boolean).length;
+            const progressPercent = (completedHabits / dailyHabits.length) * 100;
+
+            return `
+                ${habitsHtml}
+                <div class="day-progress-bar">
+                    <div class="day-progress-fill" style="width: ${progressPercent}%"></div>
+                </div>
+            `;
+        }
+
+        function toggleWorkout(key) {
+            workoutData[key] = !workoutData[key];
+            saveToLocalStorage();
+            updateStats();
+            // Update visual indicator
+            const checkbox = document.querySelector(`input[data-workout-key="${key}"]`);
+            if (checkbox) {
+                checkbox.checked = workoutData[key];
+            }
+        }
+
+        function toggleHabit(key, habitIndex) {
+            habitData[key][habitIndex] = !habitData[key][habitIndex];
+            saveToLocalStorage();
+            updateStats();
+            updateDayProgressBar(key);
+        }
+
+        function updateDayProgressBar(dayKey) {
+            const completedHabits = habitData[dayKey].filter(Boolean).length;
+            const progressPercent = (completedHabits / dailyHabits.length) * 100;
+            
+            // Find the progress bar for this day
+            const dayCell = document.querySelector(`[data-day-key="${dayKey}"]`);
+            if (dayCell) {
+                const progressFill = dayCell.querySelector('.day-progress-fill');
+                if (progressFill) {
+                    progressFill.style.width = `${progressPercent}%`;
+                }
+            }
+        }
+
+        function getCurrentWeekAndDay() {
+            // Week 0 starts on Monday 7/28/25
+            const weekStartDate = new Date(2025, 6, 28); // July 28, 2025 (month is 0-indexed)
+            const today = new Date();
+            
+            // Calculate days since the start of the program
+            const daysSinceStart = Math.floor((today - weekStartDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysSinceStart < 0) {
+                return { week: 0, day: 'Monday', dayIndex: 0 }; // Before program starts
+            }
+            
+            const currentWeek = Math.floor(daysSinceStart / 7);
+            const dayOfWeek = daysSinceStart % 7;
+            
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const currentDay = days[dayOfWeek];
+            
+            // Cap at week 12 (last week of program)
+            const cappedWeek = Math.min(currentWeek, 12);
+            
+            return { week: cappedWeek, day: currentDay, dayIndex: dayOfWeek };
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('ironman-habit-data', JSON.stringify(habitData));
+                localStorage.setItem('ironman-workout-data', JSON.stringify(workoutData));
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedHabitData = localStorage.getItem('ironman-habit-data');
+                const savedWorkoutData = localStorage.getItem('ironman-workout-data');
+                
+                if (savedHabitData) {
+                    habitData = JSON.parse(savedHabitData);
+                }
+                
+                if (savedWorkoutData) {
+                    workoutData = JSON.parse(savedWorkoutData);
+                }
+            } catch (e) {
+                console.warn('Error loading from localStorage:', e);
+                // Initialize empty data if loading fails
+                habitData = {};
+                workoutData = {};
+            }
+        }
+
+        function updateStats() {
+            // Get current week and day
+            const current = getCurrentWeekAndDay();
+            
+            // Update current day display
+            const today = new Date();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const todayString = `${dayNames[today.getDay()]} ${today.getMonth() + 1}/${today.getDate()}`;
+            document.getElementById('current-day').textContent = todayString;
+            document.getElementById('current-week').textContent = `Week ${current.week}`;
+            
+            // Count completed workouts
+            const totalWorkouts = Object.keys(workoutData).length;
+            const completedWorkouts = Object.values(workoutData).filter(Boolean).length;
+            document.getElementById('workouts-done').textContent = `${completedWorkouts}/${totalWorkouts}`;
+
+            // Today's habits
+            const todayKey = `${current.week}-${current.day}`;
+            const todayHabits = habitData[todayKey] ? habitData[todayKey].filter(Boolean).length : 0;
+            document.getElementById('habits-today').textContent = `${todayHabits}/6`;
+
+            // Current week progress
+            const weekKeys = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                .map(day => `${current.week}-${day}`);
+            
+            // Count all workouts for the current week
+            let weekWorkouts = 0;
+            let weekCompleted = 0;
+            weekKeys.forEach(dayKey => {
+                // Count workouts for this day
+                const dayWorkouts = Object.keys(workoutData).filter(key => key.startsWith(dayKey + '-'));
+                weekWorkouts += dayWorkouts.length;
+                weekCompleted += dayWorkouts.filter(key => workoutData[key]).length;
+            });
+            
+            const weekProgress = weekWorkouts > 0 ? Math.round((weekCompleted / weekWorkouts) * 100) : 0;
+            document.getElementById('week-progress').textContent = `${weekProgress}%`;
+
+            // Overall progress
+            const overallProgress = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0;
+            document.getElementById('overall-progress').textContent = `${overallProgress}%`;
+        }
+
+        function createCalendar() {
+            const calendarBody = document.getElementById('calendar-body');
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+            for (let week = 0; week <= 12; week++) {
+                const row = document.createElement('tr');
+                
+                // Week header
+                const weekHeader = document.createElement('td');
+                weekHeader.className = 'week-header';
+                weekHeader.textContent = `Week ${week}`;
+                row.appendChild(weekHeader);
+
+                // Days of the week
+                days.forEach(day => {
+                    const cell = document.createElement('td');
+                    const key = `${week}-${day}`;
+                    cell.setAttribute('data-day-key', key);
+                    
+                    // Get all workouts for this day (triathlon + strength)
+                    const allWorkouts = getCombinedWorkouts(week, day);
+                    
+                    let cellClass = '';
+                    
+                    // Check if it's a rest day or race day
+                    if (allWorkouts.length === 1 && allWorkouts[0] === 'Rest') {
+                        cellClass = 'rest-day';
+                    } else if (allWorkouts.includes('RACE DAY')) {
+                        cellClass = 'race-day';
+                    }
+                    
+                    if (cellClass) {
+                        cell.className = cellClass;
+                    }
+
+                    // Render all workouts
+                    let workoutHtml = '';
+                    if (allWorkouts.length > 0) {
+                        workoutHtml = allWorkouts.map((workout, index) => 
+                            renderWorkout(workout, day, week, index)
+                        ).join('');
+                    }
+
+                    const habitsHtml = renderHabits(week, day);
+
+                    cell.innerHTML = `
+                        <div class="day-header">${day}</div>
+                        ${workoutHtml}
+                        <div class="habits-section">
+                            ${habitsHtml}
+                        </div>
+                    `;
+                    
+                    row.appendChild(cell);
+                });
+
+                calendarBody.appendChild(row);
+            }
+        }
+
+        // Initialize the application
+        loadFromLocalStorage();
+        initializeData();
+        createCalendar();
+        updateStats();
+    </script>
+</body>
+</html>
+                        
