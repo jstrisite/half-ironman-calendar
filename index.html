@@ -408,17 +408,88 @@
             }
         }
     </style>
+
+<!-- Firebase App (the core Firebase SDK) -->
+
+
+
+<!-- Firebase App (the core Firebase SDK) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCg_RfDAtUHWekTGajWnopsTgRcK4e6eRY",
+    authDomain: "ironman-training-calendar.firebaseapp.com",
+    projectId: "ironman-training-calendar",
+    storageBucket: "ironman-training-calendar.appspot.com",
+    messagingSenderId: "10976022238",
+    appId: "1:10976022238:web:6da7b52747ebedb45bfc4f",
+    measurementId: "G-0F64QX5GV3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getFirestore();
+
+  function saveProgress(userId, data) {
+    const ref = doc(db, "trainingProgress", userId);
+    return setDoc(ref, data);
+  }
+
+  function loadProgress(userId) {
+    const ref = doc(db, "trainingProgress", userId);
+    return getDoc(ref).then(docSnap => docSnap.exists() ? docSnap.data() : {});
+  }
+
+  function collectProgress() {
+    const data = {};
+    document.querySelectorAll("input[type='checkbox']").forEach(cb => {
+      if (cb.id) data[cb.id] = cb.checked;
+    });
+    return data;
+  }
+
+  function applyProgress(data) {
+    for (const id in data) {
+      const cb = document.getElementById(id);
+      if (cb) cb.checked = data[id];
+    }
+  }
+
+  function syncOnChange(userId) {
+    document.querySelectorAll("input[type='checkbox']").forEach(cb => {
+      cb.addEventListener("change", () => {
+        const data = collectProgress();
+        saveProgress(userId, data);
+      });
+    });
+  }
+
+  function setupAuth() {
+    const loginButton = document.getElementById("login-btn");
+    loginButton.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch(console.error);
+    });
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loginButton.textContent = "Logged in as " + user.displayName;
+        loadProgress(user.uid).then(data => {
+          applyProgress(data);
+          syncOnChange(user.uid);
+        });
+      }
+    });
+  }
+
+  window.addEventListener("DOMContentLoaded", setupAuth);
+</script>
+
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏊‍♂️🚴‍♂️🏃‍♂️ Ironman Training Calendar</h1>
-            <p>13-Week Training Plan with Daily Habit Tracking</p>
-            <div class="sync-controls">
-                <input type="text" id="sync-code" class="sync-input" placeholder="Enter sync code...">
-                <button onclick="loadData()" class="sync-btn" id="load-btn">Load</button>
-                <button onclick="saveData()" class="sync-btn" id="save-btn">Save</button>
-                <div class="sync-status" id="sync-status">Ready</div>
+    
             </div>
         </div>
         
@@ -1211,6 +1282,8 @@
         createCalendar();
         updateStats();
     </script>
+
+<button id="login-btn" style="position:fixed;top:10px;right:10px;z-index:1000;">Sign in with Google</button>
 </body>
 </html>
                         
